@@ -1,0 +1,156 @@
+
+# Reproducible Research
+## Course Project 1
+
+
+### Loading and preprocessing the data
+
+
+
+For the first part of the analysis, we need to load the data from the csv files
+and load the libraries we'll need with the following:
+
+```{r}
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+
+df<-read.csv("activity.csv")
+
+```
+
+
+Then validate that the data is correct
+
+```{r}
+head(df)
+
+```
+
+
+After that, proceed to adjust the class of the variables and we create a 
+variable for the weekday of the date:
+
+```{r}
+
+df$date<-ymd(df$date)
+
+df<- df %>% mutate(weekday=weekdays(df$date))
+
+head(df)
+
+```
+
+
+### What is mean total number of steps taken per day?
+
+
+
+Then we proceed to group by date and sum all the steps taken by day, and the 
+histogram, excluding the values "NA"
+
+```{r}
+
+sum.day<-df %>% group_by(date) %>%summarise(steps=sum(steps,na.rm = TRUE))
+
+sum.day
+
+hist(sum.day$steps, breaks = 10,xlim = c(0,25000), ylim=c(0,20), main="Sum of steps by day", xlab = "Steps by day", col="purple")
+
+```
+
+
+### What is the average daily activity pattern?
+
+
+
+```{r}
+
+mean.day<-round(mean(sum.day$steps),digits = 2)
+
+median.day<-median(sum.day$steps)
+
+```
+
+
+
+- The mean number of steps per day is **`r mean.day`**
+
+- The median number of steps per day is **`r median.day`**
+
+
+### What is the average daily activity pattern?
+
+
+
+For this question we group by interval and calculate the mean of every interval
+and proceed to plot:
+
+```{r}
+
+mean.interval<-df %>% group_by(interval) %>%summarise(steps=mean(steps,na.rm = TRUE))
+max.interval<-mean.interval[which.max(mean.interval$steps),]$interval
+with(mean.interval,plot(interval,steps,main="Average steps by interval", type="l", col="purple" , lwd=2))
+
+
+
+```
+
+
+
+Then Interval where the maximum number of steps occurs is at `r max.interval`
+
+
+### Imputing missing values
+
+
+```{r}
+na.df<-sum(is.na(df$steps))
+```
+
+
+The number of values NA of the data is **`r na.df`**
+
+For this process the values of NA in the step data with the mean of steps for the
+specific interval. After the substitution were made, a new histogram is made to 
+show the difference with the previous one
+
+```{r}
+df2<-df
+df2$steps[is.na(df2$steps)]<-mean.interval$steps[match(df2$interval[is.na(df2$steps)],mean.interval$interval)]
+sum.day2<-df2 %>% group_by(date) %>%summarise(steps=sum(steps,na.rm = TRUE))
+hist(sum.day2$steps, breaks = 10,xlim = c(0,25000), ylim=c(0,20), main="Sum of steps by day, NA corrected", xlab = "Steps by day", col="purple")
+mean.day2<-mean(sum.day2$steps)
+median.day2<-median(sum.day2$steps)
+
+
+```
+
+
+The mean of steps with NA values imputed is **`r (mean.day2)`** and the median is
+**`r (median.day2)`** a difference of **`r round((mean.day2 - mean.day)/mean.day *100,digits=2)`%** for
+the mean, and **`r round((median.day2 - median.day)/median.day *100,digits=2)`%** for median
+if we introduce values for the missing parts.
+
+
+### Are there differences in activity patterns between weekdays and weekends?
+
+A new variable is added to the dataframe and a plot to evidence de differences of steps
+between weekends and weekdays is shown
+
+```{r}
+df<-df %>% mutate(type.wd=ifelse(weekday=="Saturday"| weekday=="Sunday","Weekend","Weekday"))
+mean.interval2<-df %>% group_by(type.wd,interval) %>%summarise(steps=mean(steps,na.rm = TRUE))
+ggplot(mean.interval2,aes(interval,steps,col=type.wd))+ geom_line()+facet_wrap(~type.wd,nrow = 2,ncol = 1)+theme(legend.position = "none")
+
+```
+
+We can notice that the number of steps during weekends is slightly lower then on weekdays.
+
+
+
+
+
+
+
+
